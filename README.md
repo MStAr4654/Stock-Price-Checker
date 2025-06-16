@@ -1,2 +1,3 @@
-# Stock-Price-Checker
-This repo is created for the sole Purpose of storing the files used to create the project of "Stock Price Checker" in order to submit in freeCodeCamp
+# Stock Price Checker
+
+This is the boilerplate for the Stock Price Checker project. Instructions for building your project can be found at https://freecodecamp.org/learn/information-security/information-security-projects/stock-price-checker
