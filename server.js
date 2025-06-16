@@ -12,6 +12,18 @@ const runner            = require('./test-runner');
 
 const app = express();
 app.use(helmet());
+
+app.use(
+  helmet.contentSecurityPolicy({
+    useDefaults: true,
+    directives: {
+      "default-src": ["'self'"],
+      "script-src": ["'self'"],
+      "style-src": ["'self'"]
+    }
+  })
+);
+
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
