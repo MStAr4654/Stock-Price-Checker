@@ -10,6 +10,7 @@ module.exports = function (app) {
     
 };
 */
+/*
 'use strict';
 const fetch = require('node-fetch');
 const Stock = require('../models/Stock');
@@ -140,3 +141,80 @@ module.exports = function (app) {
     }
   });
 };
+
+
+*/
+'use strict';
+const fetch = require('node-fetch');
+const Stock = require('../models/Stock');
+const crypto = require('crypto');
+
+function getHashedIP(req) {
+  const ip = req.ip || req.connection.remoteAddress;
+  return crypto.createHash('sha256').update(ip).digest('hex');
+}
+
+module.exports = function (app) {
+  app.get('/api/stock-prices', async function (req, res) {
+    const { stock, like } = req.query;
+    const ipHash = getHashedIP(req);
+    const isLike = like === 'true';
+
+    const stocks = Array.isArray(stock) ? stock : [stock];
+    try {
+      const results = await Promise.all(
+        stocks.map(async (symbol) => {
+          const upperSymbol = symbol.toUpperCase();
+          const apiUrl = `https://stock-price-checker-proxy.freecodecamp.rocks/v1/stock/${upperSymbol}/quote`;
+
+          const response = await fetch(apiUrl);
+          const data = await response.json();
+
+          if (!data.symbol || typeof data.latestPrice !== 'number') {
+            throw new Error('invalid symbol');
+          }
+
+          let stockDoc = await Stock.findOne({ symbol: upperSymbol });
+          if (!stockDoc) {
+            stockDoc = new Stock({ symbol: upperSymbol, likes: [] });
+          }
+
+          if (isLike && !stockDoc.likes.includes(ipHash)) {
+            stockDoc.likes.push(ipHash);
+            await stockDoc.save();
+          }
+
+          return {
+            stock: upperSymbol,
+            price: data.latestPrice,
+            likes: stockDoc.likes.length,
+          };
+        })
+      );
+
+      if (results.length === 1) {
+        return res.json({ stockData: results[0] });
+      } else {
+        const [a, b] = results;
+        return res.json({
+          stockData: [
+            {
+              stock: a.stock,
+              price: a.price,
+              rel_likes: a.likes - b.likes,
+            },
+            {
+              stock: b.stock,
+              price: b.price,
+              rel_likes: b.likes - a.likes,
+            },
+          ],
+        });
+      }
+    } catch (err) {
+      console.error(err.message);
+      return res.status(400).json({ error: 'invalid stock symbol' });
+    }
+  });
+};
+
