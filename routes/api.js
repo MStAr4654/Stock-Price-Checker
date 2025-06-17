@@ -145,7 +145,7 @@ module.exports = function (app) {
 
 */
 'use strict';
-const fetch = require('node-fetch');
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 const Stock = require('../models/Stock');
 const crypto = require('crypto');
 
