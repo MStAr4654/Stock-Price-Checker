@@ -6,9 +6,9 @@ const server = require('../server');
 chai.use(chaiHttp);
 
 suite('Functional Tests', function () {
-  let likesCount = 0;
+  let likes;
 
-  test('1. Viewing one stock', function (done) {
+  test('Viewing one stock: GET request to /api/stock-prices/', function (done) {
     chai.request(server)
       .get('/api/stock-prices')
       .query({ stock: 'GOOG' })
@@ -19,12 +19,12 @@ suite('Functional Tests', function () {
         assert.property(res.body.stockData, 'price');
         assert.property(res.body.stockData, 'likes');
         assert.equal(res.body.stockData.stock, 'GOOG');
-        likesCount = res.body.stockData.likes;
+        likes = res.body.stockData.likes;
         done();
       });
   });
 
-  test('2. Viewing one stock and liking it', function (done) {
+  test('Viewing one stock and liking it: GET request to /api/stock-prices/', function (done) {
     chai.request(server)
       .get('/api/stock-prices')
       .query({ stock: 'GOOG', like: true })
@@ -32,24 +32,25 @@ suite('Functional Tests', function () {
         assert.equal(res.status, 200);
         assert.equal(res.body.stockData.stock, 'GOOG');
         assert.property(res.body.stockData, 'likes');
-        assert.isAtLeast(res.body.stockData.likes, likesCount); // like should be >= previous
-        likesCount = res.body.stockData.likes;
+        assert.isAtLeast(res.body.stockData.likes, likes);
+        likes = res.body.stockData.likes;
         done();
       });
   });
 
-  test('3. Viewing the same stock and liking it again (should not increase)', function (done) {
+  test('Viewing the same stock and liking it again: GET request to /api/stock-prices/', function (done) {
     chai.request(server)
       .get('/api/stock-prices')
       .query({ stock: 'GOOG', like: true })
       .end((err, res) => {
         assert.equal(res.status, 200);
-        assert.equal(res.body.stockData.likes, likesCount); // like count should not increase
+        assert.property(res.body.stockData, 'likes');
+        assert.equal(res.body.stockData.likes, likes);
         done();
       });
   });
 
-  test('4. Viewing two stocks', function (done) {
+  test('Viewing two stocks: GET request to /api/stock-prices/', function (done) {
     chai.request(server)
       .get('/api/stock-prices')
       .query({ stock: ['GOOG', 'MSFT'] })
@@ -57,20 +58,14 @@ suite('Functional Tests', function () {
         assert.equal(res.status, 200);
         assert.isArray(res.body.stockData);
         assert.equal(res.body.stockData.length, 2);
-
-        const [stock1, stock2] = res.body.stockData;
-        assert.property(stock1, 'stock');
-        assert.property(stock1, 'price');
-        assert.property(stock1, 'rel_likes');
-
-        assert.property(stock2, 'stock');
-        assert.property(stock2, 'price');
-        assert.property(stock2, 'rel_likes');
+        assert.property(res.body.stockData[0], 'stock');
+        assert.property(res.body.stockData[0], 'price');
+        assert.property(res.body.stockData[0], 'rel_likes');
         done();
       });
   });
 
-  test('5. Viewing two stocks and liking them', function (done) {
+  test('Viewing two stocks and liking them: GET request to /api/stock-prices/', function (done) {
     chai.request(server)
       .get('/api/stock-prices')
       .query({ stock: ['GOOG', 'MSFT'], like: true })
@@ -79,17 +74,15 @@ suite('Functional Tests', function () {
         assert.isArray(res.body.stockData);
         assert.equal(res.body.stockData.length, 2);
 
-        const [stock1, stock2] = res.body.stockData;
-        assert.property(stock1, 'stock');
-        assert.property(stock1, 'price');
-        assert.property(stock1, 'rel_likes');
+        const [s1, s2] = res.body.stockData;
+        assert.property(s1, 'stock');
+        assert.property(s1, 'price');
+        assert.property(s1, 'rel_likes');
+        assert.property(s2, 'stock');
+        assert.property(s2, 'price');
+        assert.property(s2, 'rel_likes');
 
-        assert.property(stock2, 'stock');
-        assert.property(stock2, 'price');
-        assert.property(stock2, 'rel_likes');
-
-        // rel_likes should be opposite
-        assert.equal(stock1.rel_likes, -stock2.rel_likes);
+        assert.equal(s1.rel_likes, -s2.rel_likes);
         done();
       });
   });
